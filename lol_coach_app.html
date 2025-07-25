@@ -1,0 +1,1664 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LoL Personal Coach</title>
+    <style>
+        :root {
+            /* Dracula + Nord hybrid color scheme */
+            --bg-primary: #2E3440;
+            --bg-secondary: #3B4252;
+            --bg-tertiary: #434C5E;
+            --accent-primary: #88C0D0;
+            --accent-secondary: #81A1C1;
+            --accent-tertiary: #5E81AC;
+            --text-primary: #ECEFF4;
+            --text-secondary: #D8DEE9;
+            --text-muted: #A3BE8C;
+            --success: #A3BE8C;
+            --warning: #EBCB8B;
+            --error: #BF616A;
+            --purple: #B48EAD;
+            --orange: #D08770;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
+            color: var(--text-primary);
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 3rem;
+            padding: 2rem;
+            background: rgba(59, 66, 82, 0.3);
+            border-radius: 16px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(136, 192, 208, 0.1);
+        }
+
+        .header h1 {
+            font-size: 3rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--accent-primary), var(--purple));
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.5rem;
+        }
+
+        .header p {
+            color: var(--text-secondary);
+            font-size: 1.2rem;
+        }
+
+        .search-section {
+            background: var(--bg-secondary);
+            padding: 2rem;
+            border-radius: 16px;
+            margin-bottom: 2rem;
+            border: 1px solid rgba(136, 192, 208, 0.1);
+        }
+
+        .search-form {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-group label {
+            margin-bottom: 0.5rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .form-group input, .form-group select {
+            padding: 0.75rem;
+            border: 2px solid var(--bg-tertiary);
+            border-radius: 8px;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .form-group input:focus, .form-group select:focus {
+            outline: none;
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 0 3px rgba(136, 192, 208, 0.1);
+        }
+
+        .search-button {
+            padding: 0.75rem 2rem;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-tertiary));
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 1rem;
+        }
+
+        .search-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(136, 192, 208, 0.3);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: var(--bg-secondary);
+            padding: 1.5rem;
+            border-radius: 12px;
+            border: 1px solid rgba(136, 192, 208, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 35px rgba(0, 0, 0, 0.2);
+            border-color: var(--accent-primary);
+        }
+
+        .stat-card h3 {
+            color: var(--accent-primary);
+            margin-bottom: 1rem;
+            font-size: 1.3rem;
+        }
+
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .tags-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+
+        .achievement-tag {
+            padding: 0.4rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: white;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .tag-mvp { background: linear-gradient(135deg, var(--warning), var(--orange)); }
+        .tag-double-kill { background: linear-gradient(135deg, var(--error), var(--purple)); }
+        .tag-unstoppable { background: linear-gradient(135deg, var(--success), var(--accent-primary)); }
+        .tag-carry { background: linear-gradient(135deg, var(--purple), var(--accent-tertiary)); }
+        .tag-clutch { background: linear-gradient(135deg, var(--orange), var(--error)); }
+
+        .chart-container {
+            background: var(--bg-secondary);
+            padding: 2rem;
+            border-radius: 12px;
+            margin-bottom: 2rem;
+            border: 1px solid rgba(136, 192, 208, 0.1);
+        }
+
+        .chart-title {
+            color: var(--accent-primary);
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+
+        .progress-bar {
+            background: var(--bg-tertiary);
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 0.5rem 0;
+        }
+
+        .progress-fill {
+            height: 8px;
+            background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary));
+            transition: width 0.8s ease;
+        }
+
+        .insights-section {
+            background: var(--bg-secondary);
+            padding: 2rem;
+            border-radius: 12px;
+            margin-bottom: 2rem;
+            border: 1px solid rgba(136, 192, 208, 0.1);
+        }
+
+        .insights-title {
+            color: var(--accent-primary);
+            font-size: 1.8rem;
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+
+        .insight-item {
+            background: var(--bg-tertiary);
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            border-left: 4px solid var(--accent-primary);
+        }
+
+        .insight-title {
+            color: var(--warning);
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .insight-text {
+            color: var(--text-secondary);
+        }
+
+        .loading {
+            text-align: center;
+            padding: 3rem;
+            color: var(--text-secondary);
+        }
+
+        .error {
+            background: rgba(191, 97, 106, 0.1);
+            border: 1px solid var(--error);
+            color: var(--error);
+            padding: 1rem;
+            border-radius: 8px;
+            margin: 1rem 0;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .loading {
+            animation: pulse 2s infinite;
+        }
+
+        .op-score {
+            font-size: 3rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--warning), var(--orange));
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-align: center;
+        }
+
+        /* Settings Panel Styles */
+        .settings-button {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            border: 2px solid var(--accent-primary);
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 1.5rem;
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+
+        .settings-button:hover {
+            background: var(--accent-primary);
+            transform: rotate(45deg) scale(1.1);
+            box-shadow: 0 8px 25px rgba(136, 192, 208, 0.3);
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 10000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(5px);
+        }
+
+        .modal-content {
+            background: var(--bg-primary);
+            margin: 5% auto;
+            padding: 0;
+            border: 2px solid var(--accent-primary);
+            border-radius: 16px;
+            width: 90%;
+            max-width: 800px;
+            max-height: 85vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-header {
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-tertiary));
+            color: white;
+            padding: 1.5rem;
+            border-radius: 14px 14px 0 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header h2 {
+            margin: 0;
+            font-size: 1.8rem;
+            font-weight: 600;
+        }
+
+        .close {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 2rem;
+            cursor: pointer;
+            padding: 0;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+
+        .close:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: rotate(90deg);
+        }
+
+        .modal-body {
+            padding: 2rem;
+        }
+
+        .settings-section {
+            margin-bottom: 2rem;
+            padding: 1.5rem;
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            border: 1px solid rgba(136, 192, 208, 0.1);
+        }
+
+        .settings-section h3 {
+            color: var(--accent-primary);
+            margin: 0 0 1rem 0;
+            font-size: 1.3rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .saved-accounts-list {
+            max-height: 300px;
+            overflow-y: auto;
+            margin-bottom: 1rem;
+        }
+
+        .account-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1rem;
+            background: var(--bg-tertiary);
+            border-radius: 8px;
+            margin-bottom: 0.5rem;
+            border-left: 4px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .account-item.default {
+            border-left-color: var(--accent-primary);
+            background: rgba(136, 192, 208, 0.1);
+        }
+
+        .account-item:hover {
+            background: rgba(136, 192, 208, 0.05);
+        }
+
+        .account-info {
+            flex: 1;
+        }
+
+        .account-name {
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 0.25rem;
+        }
+
+        .account-details {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        .account-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .btn {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-tertiary));
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(136, 192, 208, 0.3);
+        }
+
+        .btn-secondary {
+            background: var(--bg-tertiary);
+            color: var(--text-secondary);
+            border: 1px solid var(--bg-tertiary);
+        }
+
+        .btn-secondary:hover {
+            background: var(--accent-primary);
+            color: white;
+            border-color: var(--accent-primary);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, var(--error), #d63384);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(191, 97, 106, 0.3);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, var(--success), #198754);
+            color: white;
+        }
+
+        .btn-success:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(163, 190, 140, 0.3);
+        }
+
+        .add-account-form {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .settings-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+        }
+
+        .stat-box {
+            text-align: center;
+            padding: 1rem;
+            background: var(--bg-tertiary);
+            border-radius: 8px;
+        }
+
+        .stat-number {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--accent-primary);
+            margin-bottom: 0.25rem;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        .default-badge {
+            background: var(--success);
+            color: white;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 2rem;
+            color: var(--text-muted);
+        }
+
+        .empty-state-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 0.75rem;
+            margin-top: 1rem;
+        }
+
+        .search-button.update-data {
+            background: linear-gradient(135deg, var(--warning), var(--orange));
+        }
+
+        .search-button.source-link {
+            background: linear-gradient(135deg, #BD93F9, #6272A4);
+            display: none;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+        }
+
+        .search-button.update-data {
+            display: none;
+        }
+
+        .search-button.visible {
+            display: inline-block;
+        }
+
+        .search-button.fade-in {
+            opacity: 1;
+        }
+
+        @media (max-width: 768px) {
+            .modal-content {
+                width: 95%;
+                margin: 2% auto;
+                max-height: 95vh;
+            }
+            
+            .add-account-form {
+                grid-template-columns: 1fr;
+            }
+            
+            .account-actions {
+                flex-direction: column;
+                gap: 0.25rem;
+            }
+            
+            .btn {
+                padding: 0.4rem 0.8rem;
+                font-size: 0.8rem;
+            }
+        }
+
+        .rank-display {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        .rank-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--accent-primary), var(--purple));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 1.2rem;
+        }
+
+        /* Match History Styles */
+        .match-history-section {
+            background: var(--bg-secondary);
+            padding: 2rem;
+            border-radius: 12px;
+            margin-bottom: 2rem;
+            border: 1px solid rgba(136, 192, 208, 0.1);
+        }
+
+        .match-history-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .match-history-title {
+            color: var(--accent-primary);
+            font-size: 1.8rem;
+            margin: 0;
+        }
+
+        .match-history-controls {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .match-filter select {
+            padding: 0.5rem 1rem;
+            border: 2px solid var(--bg-tertiary);
+            border-radius: 8px;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            font-size: 0.9rem;
+        }
+
+        .pagination-info {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .pagination-controls {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .match-history-stats {
+            margin-bottom: 1.5rem;
+        }
+
+        .stat-summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 1rem;
+            padding: 1rem;
+            background: var(--bg-tertiary);
+            border-radius: 8px;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-item .stat-number {
+            display: block;
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--accent-primary);
+            margin-bottom: 0.25rem;
+        }
+
+        .stat-item .stat-label {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .match-history-container {
+            min-height: 400px;
+        }
+
+        .match-card {
+            background: var(--bg-tertiary);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            border-left: 4px solid transparent;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            display: grid;
+            grid-template-columns: auto 1fr auto auto;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .match-card.win {
+            border-left-color: var(--success);
+            background: rgba(163, 190, 140, 0.05);
+        }
+
+        .match-card.loss {
+            border-left-color: var(--error);
+            background: rgba(191, 97, 106, 0.05);
+        }
+
+        .match-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+            background: rgba(136, 192, 208, 0.05);
+        }
+
+        .champion-info {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .champion-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 8px;
+            background: linear-gradient(135deg, var(--accent-primary), var(--purple));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: white;
+            font-size: 0.9rem;
+        }
+
+        .champion-details {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .champion-name {
+            font-weight: 600;
+            color: var(--text-primary);
+            font-size: 0.95rem;
+        }
+
+        .match-type {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        .match-stats {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
+        .kda {
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .kda.good { color: var(--success); }
+        .kda.average { color: var(--warning); }
+        .kda.bad { color: var(--error); }
+
+        .match-details {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        .items {
+            display: flex;
+            gap: 0.25rem;
+        }
+
+        .item {
+            width: 24px;
+            height: 24px;
+            background: var(--bg-primary);
+            border-radius: 4px;
+            border: 1px solid var(--bg-tertiary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7rem;
+            color: var(--text-muted);
+        }
+
+        .match-result {
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
+        .result-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .result-badge.win {
+            background: var(--success);
+            color: white;
+        }
+
+        .result-badge.loss {
+            background: var(--error);
+            color: white;
+        }
+
+        .match-duration {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        .loading-matches {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 3rem;
+            color: var(--text-secondary);
+        }
+
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid var(--bg-tertiary);
+            border-top: 3px solid var(--accent-primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 1rem;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .no-matches {
+            text-align: center;
+            padding: 3rem;
+            color: var(--text-muted);
+        }
+
+        .no-matches h3 {
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+        }
+
+        /* Match Detail Modal Styles */
+        .match-detail-content {
+            max-width: 1000px;
+        }
+
+        .match-detail-header {
+            background: linear-gradient(135deg, var(--purple), var(--accent-tertiary));
+        }
+
+        .match-detail-body {
+            max-height: 70vh;
+            overflow-y: auto;
+        }
+
+        .match-overview {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .overview-card {
+            background: var(--bg-tertiary);
+            padding: 1rem;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .overview-card h4 {
+            color: var(--accent-primary);
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .overview-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--text-primary);
+        }
+
+        .team-comparison {
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .team {
+            background: var(--bg-tertiary);
+            padding: 1rem;
+            border-radius: 8px;
+        }
+
+        .team.blue {
+            border-left: 4px solid #4A90E2;
+        }
+
+        .team.red {
+            border-left: 4px solid #E24A4A;
+        }
+
+        .vs-divider {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--text-secondary);
+        }
+
+        .participant {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem;
+            margin-bottom: 0.5rem;
+            background: rgba(136, 192, 208, 0.05);
+            border-radius: 6px;
+            font-size: 0.8rem;
+        }
+
+        .participant.current-player {
+            background: rgba(136, 192, 208, 0.15);
+            border: 1px solid var(--accent-primary);
+        }
+
+        .participant-champion {
+            font-weight: 600;
+            min-width: 80px;
+        }
+
+        .participant-kda {
+            color: var(--text-secondary);
+            min-width: 60px;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .match-history-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 1rem;
+            }
+
+            .match-history-controls {
+                flex-direction: column;
+                align-items: flex-start;
+                width: 100%;
+                gap: 0.5rem;
+            }
+
+            .match-card {
+                grid-template-columns: 1fr;
+                gap: 0.75rem;
+                text-align: center;
+            }
+
+            .champion-info {
+                justify-content: center;
+            }
+
+            .stat-summary {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .team-comparison {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+
+            .vs-divider {
+                display: none;
+            }
+        }
+    </style>
+    <!-- storage.js is loaded at the end of the file -->
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>LoL Personal Coach</h1>
+            <p>Advanced League of Legends Analytics & Insights</p>
+        </div>
+
+        <div class="search-section">
+            <form class="search-form" id="searchForm">
+                <div class="form-group">
+                    <label for="summonerName">Summoner Name</label>
+                    <input type="text" id="summonerName" placeholder="Enter summoner name" required>
+                </div>
+                <div class="form-group">
+                    <label for="tagLine">Tag Line</label>
+                    <input type="text" id="tagLine" placeholder="e.g. NA1" required>
+                </div>
+                <div class="form-group">
+                    <label for="region">Region</label>
+                    <select id="region" required>
+                        <option value="na1">North America</option>
+                        <option value="euw1">Europe West</option>
+                        <option value="eun1">Europe Nordic & East</option>
+                        <option value="kr">Korea</option>
+                        <option value="jp1">Japan</option>
+                        <option value="br1">Brazil</option>
+                        <option value="la1">Latin America North</option>
+                        <option value="la2">Latin America South</option>
+                        <option value="oc1">Oceania</option>
+                        <option value="tr1">Turkey</option>
+                        <option value="ru">Russia</option>
+                    </select>
+                </div>
+
+            </form>
+                <div class="button-group">
+                    <button class="search-button" id="analyzeButton">Analyze Summoner</button>
+                    <button class="search-button update-data" id="updateButton">Update Data</button>
+                    <button class="search-button source-link" id="sourceLinkButton">View on OP.GG</button>
+                </div>
+        </div>
+
+        <div id="resultsContainer" style="display: none;">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <h3>OP Score</h3>
+                    <div class="op-score" id="opScore">87</div>
+                    <div class="stat-label">Overall Performance Rating</div>
+                    <div class="tags-container" id="achievementTags">
+                        <span class="achievement-tag tag-mvp">MVP</span>
+                        <span class="achievement-tag tag-carry">Carry</span>
+                        <span class="achievement-tag tag-unstoppable">Unstoppable</span>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <h3>Current Rank</h3>
+                    <div class="rank-display">
+                        <div class="rank-icon" id="rankIcon">G2</div>
+                        <div>
+                            <div class="stat-value" id="rankTier">Gold II</div>
+                            <div class="stat-label" id="rankLP">1,247 LP</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <h3>Win Rate</h3>
+                    <div class="stat-value" id="winRate">67%</div>
+                    <div class="stat-label">Last 20 Games</div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: 67%"></div>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <h3>KDA</h3>
+                    <div class="stat-value" id="kdaRatio">2.4</div>
+                    <div class="stat-label" id="kdaBreakdown">8.2 / 3.4 / 9.8 avg</div>
+                </div>
+
+                <div class="stat-card">
+                    <h3>Main Champion</h3>
+                    <div class="stat-value" id="mainChamp">Jinx</div>
+                    <div class="stat-label" id="champWinRate">72% Win Rate (18 games)</div>
+                </div>
+
+                <div class="stat-card">
+                    <h3>CS/Min</h3>
+                    <div class="stat-value" id="csPerMin">7.2</div>
+                    <div class="stat-label">Creep Score per Minute</div>
+                </div>
+            </div>
+
+            <div class="chart-container">
+                <div class="chart-title">Performance Trends</div>
+                <canvas id="performanceChart" width="800" height="300"></canvas>
+            </div>
+
+            <div class="insights-section">
+                <div class="insights-title">AI Coach Insights</div>
+                <div id="insightsContainer">
+                    <div class="insight-item">
+                        <div class="insight-title">🎯 Improve Your Farming</div>
+                        <div class="insight-text">Your CS/min is below average for your rank. Focus on last-hitting minions and consider practicing in training mode.</div>
+                    </div>
+                    <div class="insight-item">
+                        <div class="insight-title">⚔️ Aggressive Playstyle</div>
+                        <div class="insight-text">Your high kill participation suggests an aggressive playstyle. Try to maintain this while reducing unnecessary deaths.</div>
+                    </div>
+                    <div class="insight-item">
+                        <div class="insight-title">🏆 Champion Mastery</div>
+                        <div class="insight-text">You show excellent performance on Jinx. Consider expanding your champion pool with similar ADC champions.</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Detailed Match History Section -->
+            <div class="match-history-section">
+                <div class="match-history-header">
+                    <h2 class="match-history-title">📋 Detailed Match History</h2>
+                    <div class="match-history-controls">
+                        <div class="match-filter">
+                            <select id="queueFilter">
+                                <option value="all">All Queues</option>
+                                <option value="420">Ranked Solo</option>
+                                <option value="440">Ranked Flex</option>
+                                <option value="450">ARAM</option>
+                                <option value="400">Normal Draft</option>
+                            </select>
+                        </div>
+                        <div class="pagination-info" id="paginationInfo">Showing 1-20 of 20 matches</div>
+                        <div class="pagination-controls">
+                            <button class="btn btn-secondary" id="prevPage" disabled>← Previous</button>
+                            <button class="btn btn-secondary" id="nextPage" disabled>Next →</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="match-history-stats">
+                    <div class="stat-summary">
+                        <div class="stat-item">
+                            <span class="stat-number" id="totalWins">12</span>
+                            <span class="stat-label">Wins</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-number" id="totalLosses">8</span>
+                            <span class="stat-label">Losses</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-number" id="avgKDA">2.4</span>
+                            <span class="stat-label">Avg KDA</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-number" id="avgCS">7.2</span>
+                            <span class="stat-label">Avg CS/min</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="match-history-container" id="matchHistoryContainer">
+                    <!-- Match cards will be populated here -->
+                    <div class="loading-matches" id="matchLoading">
+                        <div class="loading-spinner"></div>
+                        <p>Loading match history...</p>
+                    </div>
+                    
+                    <div class="no-matches" id="noMatches" style="display: none;">
+                        <div class="empty-state-icon">🎮</div>
+                        <h3>No matches found</h3>
+                        <p>Play some games to see your detailed match history here!</p>
+                    </div>
+                </div>
+                
+                <!-- Match Detail Modal -->
+                <div class="modal" id="matchDetailModal">
+                    <div class="modal-content match-detail-content">
+                        <div class="modal-header match-detail-header">
+                            <h2 id="matchDetailTitle">Match Details</h2>
+                            <button class="close" id="matchDetailClose">&times;</button>
+                        </div>
+                        <div class="modal-body" id="matchDetailBody">
+                            <!-- Detailed match information will be populated here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Cache Management -->
+            <div style="text-align: center; margin-top: 2rem; padding: 1rem; border-top: 1px solid var(--bg-tertiary);">
+                <button onclick="clearAllCache()" style="background: var(--error); color: white; border: none; padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer; font-size: 0.9rem;">Clear Cached Data</button>
+                <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.5rem;">Clear all stored summoner data from browser cache</p>
+            </div>
+        </div>
+
+        <div id="loadingContainer" class="loading" style="display: none;">
+            <h3>Analyzing your League of Legends data...</h3>
+            <p>Fetching match history and calculating insights</p>
+        </div>
+
+        <div id="errorContainer" class="error" style="display: none;">
+            <h3>Error fetching data</h3>
+            <p id="errorMessage">Please check your summoner name and try again.</p>
+        </div>
+    </div>
+
+    <!-- Settings Button & Modal -->
+    <div class="settings-button" id="settingsBtn">⚙️</div>
+    <div class="modal" id="settingsModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Settings</h2>
+                <button class="close" id="settingsClose">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="settings-section" id="accountManagement">
+                    <h3>Saved Accounts</h3>
+                    <div class="saved-accounts-list" id="accountsList"></div>
+                    <form id="addAccountForm" class="add-account-form">
+                        <div><input type="text" id="newSummonerName" placeholder="Summoner Name" required></div>
+                        <div><input type="text" id="newTagLine" placeholder="Tag Line" required></div>
+                        <button type="submit" class="btn btn-success">Add Account</button>
+                    </form>
+                    <div class="empty-state" id="emptyState">
+                        <div class="empty-state-icon">📭</div>
+                        <p>No saved accounts yet. Add your first summoner!</p>
+                    </div>
+                </div>
+
+                <div class="settings-stats">
+                    <div class="stat-box">
+                        <div class="stat-number" id="totalAccounts">0</div>
+                        <div class="stat-label">Total Accounts</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-number" id="defaultAccount">None</div>
+                        <div class="stat-label">Default Account</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/storage.js" defer></script>
+    <script defer>
+        // Global function declarations
+        let fetchSummonerData, updateSummonerData, displaySummonerData;
+        
+        // Main app initialization
+        window.addEventListener('load', function() {
+            console.log('App initializing...');
+            
+            // Initialize event listeners
+            document.getElementById('analyzeButton').addEventListener('click', () => {
+                console.log('Analyze button clicked');
+                fetchSummonerData();
+            });
+            
+            document.getElementById('updateButton').addEventListener('click', () => {
+                console.log('Update button clicked');
+                updateSummonerData();
+            });
+            
+            document.getElementById('searchForm').addEventListener('submit', (e) => {
+                e.preventDefault();
+                console.log('Form submitted');
+                fetchSummonerData();
+            });
+        });
+        
+        // Wait for DOM and storage to be ready
+        window.addEventListener('load', async function() {
+            if (!window.lolStorage) {
+                console.error('Storage system not initialized!');
+                alert('Error: Storage system not initialized. Please refresh the page.');
+                return;
+            }
+            // Skipped call to undefined loadDefaultAccount();
+            initializeChart();
+            console.log('App initialized successfully!');
+        });
+
+        // Enhanced storage functions using the new storage system
+        async function saveToCache(summonerName, tagLine, region, data, settings = {}) {
+            if (window.lolStorage) {
+                return await window.lolStorage.saveSummonerData(summonerName, tagLine, region, data, settings);
+            }
+            console.warn('Enhanced storage not available, falling back to localStorage');
+            try {
+                const summonerKey = `${summonerName}_${tagLine}_${region}`.toLowerCase();
+                localStorage.setItem(`lol_coach_${summonerKey}`, JSON.stringify({
+                    data: data,
+                    timestamp: Date.now(),
+                    expires: Date.now() + (48 * 60 * 60 * 1000) // Cache for 48 hours
+                }));
+                return true;
+            } catch (e) {
+                console.warn('Failed to save to localStorage:', e);
+                return false;
+            }
+        }
+        
+        async function getFromCache(summonerName, tagLine, region) {
+            if (window.lolStorage) {
+                const cached = await window.lolStorage.getSummonerData(summonerName, tagLine, region);
+                return cached ? cached.data : null;
+            }
+            console.warn('Enhanced storage not available, falling back to localStorage');
+            try {
+                const summonerKey = `${summonerName}_${tagLine}_${region}`.toLowerCase();
+                const cached = localStorage.getItem(`lol_coach_${summonerKey}`);
+                if (cached) {
+                    const parsedCache = JSON.parse(cached);
+                    if (Date.now() < parsedCache.expires) {
+                        return parsedCache.data;
+                    } else {
+                        localStorage.removeItem(`lol_coach_${summonerKey}`);
+                    }
+                }
+            } catch (e) {
+                console.warn('Failed to get from localStorage:', e);
+            }
+            return null;
+        }
+        
+        async function clearAllCache() {
+            if (window.lolStorage) {
+                const success = await window.lolStorage.clearAllData();
+                if (success) {
+                    alert('All cached data cleared successfully!');
+                    // Show storage stats after clearing
+                    await showStorageStats();
+                } else {
+                    alert('Failed to clear cache. Please try again.');
+                }
+                return;
+            }
+            try {
+                const keys = Object.keys(localStorage).filter(key => key.startsWith('lol_coach_'));
+                keys.forEach(key => localStorage.removeItem(key));
+                alert('Cache cleared successfully!');
+            } catch (e) {
+                console.warn('Failed to clear cache:', e);
+            }
+        }
+
+        function showLoading() {
+            document.getElementById('loadingContainer').style.display = 'block';
+            document.getElementById('resultsContainer').style.display = 'none';
+            document.getElementById('errorContainer').style.display = 'none';
+        }
+
+        function hideLoading() {
+            document.getElementById('loadingContainer').style.display = 'none';
+        }
+
+        function showError(message) {
+            document.getElementById('errorContainer').style.display = 'block';
+            document.getElementById('errorMessage').textContent = message;
+            document.getElementById('resultsContainer').style.display = 'none';
+            hideLoading();
+        }
+
+        function showResults() {
+            document.getElementById('resultsContainer').style.display = 'block';
+            document.getElementById('errorContainer').style.display = 'none';
+            hideLoading();
+        }
+
+        function initializeChart() {
+            // Basic chart initialization
+            const ctx = document.getElementById('performanceChart');
+            if (!ctx) {
+                console.warn('Performance chart canvas not found');
+                return;
+            }
+            // You can add actual chart initialization here if needed
+            console.log('Chart initialized');
+        }
+
+        function calculateOPScore(data) {
+            // Simplified OP Score calculation
+            const winRateScore = (data.recentGames.wins / data.recentGames.totalGames) * 40;
+            const kdaScore = Math.min((data.kda.kills + data.kda.assists) / Math.max(data.kda.deaths, 1) * 15, 30);
+            const csScore = Math.min(data.csPerMin * 3, 20);
+            const championMasteryScore = data.mainChampion.winRate * 0.1;
+            
+            return Math.round(winRateScore + kdaScore + csScore + championMasteryScore);
+        }
+
+        function updateAchievementTags(achievements) {
+            const container = document.getElementById('achievementTags');
+            const tagClasses = {
+                'MVP': 'tag-mvp',
+                'Carry': 'tag-carry', 
+                'Unstoppable': 'tag-unstoppable',
+                'Double Kill': 'tag-double-kill',
+                'Clutch': 'tag-clutch'
+            };
+            
+            container.innerHTML = '';
+            achievements.slice(0, 4).forEach(achievement => {
+                const tag = document.createElement('span');
+                tag.className = `achievement-tag ${tagClasses[achievement] || 'tag-carry'}`;
+                tag.textContent = achievement;
+                container.appendChild(tag);
+            });
+        }
+
+        function generateInsights(data) {
+            const insights = [];
+            const winRate = (data.recentGames.wins / data.recentGames.totalGames) * 100;
+            const kda = (data.kda.kills + data.kda.assists) / Math.max(data.kda.deaths, 1);
+            
+            if (data.csPerMin < 6.5) {
+                insights.push({
+                    title: '🎯 Improve Your Farming',
+                    text: 'Your CS/min is below average for your rank. Focus on last-hitting minions and consider practicing in training mode.'
+                });
+            }
+            
+            if (kda > 2.5) {
+                insights.push({
+                    title: '⚔️ Aggressive Playstyle',
+                    text: 'Your high KDA suggests good positioning and decision-making. Try to maintain this while helping teammates more.'
+                });
+            }
+            
+            if (data.mainChampion.winRate > 65) {
+                insights.push({
+                    title: '🏆 Champion Mastery',
+                    text: `You show excellent performance on ${data.mainChampion.name}. Consider expanding your champion pool with similar champions.`
+                });
+            }
+            
+            if (winRate < 50) {
+                insights.push({
+                    title: '📈 Focus on Consistency',
+                    text: 'Your recent win rate suggests room for improvement. Focus on minimizing mistakes and playing safer.'
+                });
+            }
+            
+            return insights;
+        }
+
+        function updateInsights(insights) {
+            const container = document.getElementById('insightsContainer');
+            container.innerHTML = '';
+            
+            insights.forEach(insight => {
+                const item = document.createElement('div');
+                item.className = 'insight-item';
+                item.innerHTML = `
+                    <div class="insight-title">${insight.title}</div>
+                    <div class="insight-text">${insight.text}</div>
+                `;
+                container.appendChild(item);
+            });
+        }
+
+        // Function definitions
+        // Restore updateSummonerData to prevent undefined errors and enable Update Data button
+        updateSummonerData = async function() {
+            // Force refresh summoner data
+            console.log('updateSummonerData called');
+            await fetchSummonerData(true);
+        }
+        fetchSummonerData = async function(forceRefresh = false) {
+            console.log('fetchSummonerData called', { forceRefresh });
+
+            const summonerName = document.getElementById('summonerName').value.trim();
+            const tagLine = document.getElementById('tagLine').value.replace('#', '').trim();
+            const region = document.getElementById('region').value;
+        
+
+            if (!summonerName || !tagLine) {
+                showError('Please enter both summoner name and tag line');
+                return;
+            }
+
+            // Check cache first unless forcing refresh
+            if (!forceRefresh) {
+                const cachedData = await getFromCache(summonerName, tagLine, region);
+                if (cachedData) {
+                    displaySummonerData(cachedData);
+                    document.getElementById('updateButton').style.display = 'inline-block';
+                    window.currentSummoner = { summonerName, tagLine, region };
+                    return;
+                }
+            }
+
+            showLoading();
+
+            try {
+                const response = await fetch('http://localhost:3000/api/summoner', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ summonerName, tagLine, region })
+                });
+                // If the backend returns a JSON error, handle it gracefully
+                const contentType = response.headers.get('content-type');
+                if (contentType && contentType.includes('application/json')) {
+                    const errorJson = await response.clone().json();
+                    if (errorJson && errorJson.error) {
+                        throw new Error(errorJson.error);
+                    }
+                }
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                await saveToCache(summonerName, tagLine, region, data);
+                displaySummonerData(data);
+                window.currentSummoner = { summonerName, tagLine, region };
+                document.getElementById('updateButton').style.display = 'inline-block';
+                showResults();
+            } catch (error) {
+                console.error('Error fetching summoner data:', error);
+                showError(error.message || 'Failed to fetch summoner data. Please try again.');
+                document.getElementById('updateButton').style.display = 'none';
+            } finally {
+                hideLoading();
+            }
+        }
+        
+        displaySummonerData = function(data) {
+            console.log('Displaying summoner data:', data);
+            if (!data) {
+                showError('No data available for this summoner');
+                return;
+            }
+
+            // Update UI with fetched data
+            document.getElementById('opScore').textContent = (typeof data.opScore !== 'undefined' ? data.opScore : calculateOPScore(data)) || 'N/A';
+
+            const winRate = Math.round((data.statistics?.winRate || 0) * 100);
+            document.getElementById('winRate').textContent = winRate + '%';
+            document.querySelector('.progress-fill').style.width = winRate + '%';
+
+            // Handle ranked data (robust for OP.GG scraping)
+            let rankTier = 'Unranked', rankLP = '0 LP', rankIcon = 'U';
+            if (data.ranked && data.ranked.length > 0) {
+                // Try to find a solo queue or fallback to first
+                const soloQueue = data.ranked.find(q => (q.queueType || q.queue || '').toUpperCase().includes('SOLO')) || data.ranked[0];
+                if (soloQueue) {
+                    // Accept both 'tier' and 'rank' or 'division' fields
+                    const tier = soloQueue.tier || soloQueue.rank || soloQueue.tier_name || soloQueue.division || 'Unranked';
+                    const division = soloQueue.rank || soloQueue.rank_division || soloQueue.division || '';
+                    const lp = soloQueue.leaguePoints || soloQueue.lp || soloQueue.league_points || 0;
+                    rankTier = `${tier} ${division}`.trim();
+                    rankLP = `${lp} LP`;
+                    // Icon: e.g. "I4" for Iron IV, "G2" for Gold II
+                    rankIcon = (tier[0] || 'U').toUpperCase() + (division[0] || '');
+                }
+            }
+            document.getElementById('rankTier').textContent = rankTier;
+            document.getElementById('rankLP').textContent = rankLP;
+            document.getElementById('rankIcon').textContent = rankIcon;
+
+            const kdaRatio = (data.statistics?.avgKDA || 0).toFixed(1);
+            document.getElementById('kdaRatio').textContent = kdaRatio;
+
+            // Calculate average KDA from matches
+            if (data.matches && data.matches.length > 0) {
+                const avgKills = data.matches.reduce((sum, m) => sum + (m.kills || 0), 0) / data.matches.length;
+                const avgDeaths = data.matches.reduce((sum, m) => sum + (m.deaths || 0), 0) / data.matches.length;
+                const avgAssists = data.matches.reduce((sum, m) => sum + (m.assists || 0), 0) / data.matches.length;
+                document.getElementById('kdaBreakdown').textContent = `${avgKills.toFixed(1)} / ${avgDeaths.toFixed(1)} / ${avgAssists.toFixed(1)} avg`;
+
+                // Find most played champion
+                const championCounts = {};
+                data.matches.forEach(match => {
+                    const champ = match.champion_name || 'Unknown';
+                    championCounts[champ] = (championCounts[champ] || 0) + 1;
+                });
+                if (Object.keys(championCounts).length > 0) {
+                    const mainChamp = Object.keys(championCounts).reduce((a, b) => championCounts[a] > championCounts[b] ? a : b);
+                    const champGames = championCounts[mainChamp] || 0;
+                    const champWins = data.matches.filter(m => m.champion_name === mainChamp && m.win).length;
+                    const champWinRate = champGames > 0 ? Math.round((champWins / champGames) * 100) : 0;
+
+                    document.getElementById('mainChamp').textContent = mainChamp;
+                    document.getElementById('champWinRate').textContent = `${champWinRate}% Win Rate (${champGames} games)`;
+                } else {
+                    document.getElementById('mainChamp').textContent = 'No Data';
+                    document.getElementById('champWinRate').textContent = 'Play some games!';
+                }
+            } else {
+                document.getElementById('kdaBreakdown').textContent = 'No recent matches';
+                document.getElementById('mainChamp').textContent = 'No Data';
+                document.getElementById('champWinRate').textContent = 'Play some games!';
+            }
+            
+            document.getElementById('csPerMin').textContent = (data.statistics?.avgCS || 0).toFixed(1);
+            
+            // Generate achievement tags from data
+            const achievements = [];
+            if (data.statistics?.avgKDA > 3) achievements.push('MVP');
+            if (data.statistics?.avgKDA > 2.5) achievements.push('Carry');
+            if (data.statistics?.winRate > 0.7) achievements.push('Unstoppable');
+            if (data.statistics?.avgCS > 7) achievements.push('Farm Master');
+            updateAchievementTags(achievements);
+            
+            // Use insights from backend
+            updateInsights(data.insights || []);
+            // Show update button and results
+            document.getElementById('updateButton').classList.add('visible');
+            showResults();
+
+            // Show OP.GG/source link button if available
+            const sourceBtn = document.getElementById('sourceLinkButton');
+            sourceBtn.classList.remove('visible');  // Reset visibility
+            const generateOpggUrl = (name, tag, region) => {
+                // Convert region to OPGG format
+                const regionMap = {
+                    'na1': 'na',
+                    'euw1': 'euw',
+                    'eun1': 'eune',
+                    'kr': 'kr',
+                    'br1': 'br',
+                    'jp1': 'jp',
+                    'la1': 'lan',
+                    'la2': 'las',
+                    'oc1': 'oce',
+                    'tr1': 'tr',
+                    'ru': 'ru'
+                };
+                const opggRegion = regionMap[region.toLowerCase()] || region;
+                return `https://${opggRegion}.op.gg/summoners/${opggRegion}/${encodeURIComponent(name)}-${encodeURIComponent(tag)}`;
+            };
+
+            if (data.summoner && data.summoner.name && data.summoner.tagLine) {
+                const opggUrl = generateOpggUrl(data.summoner.name, data.summoner.tagLine, data.summoner.region || window.currentSummoner.region);
+                sourceBtn.onclick = () => window.open(opggUrl, '_blank');
+                sourceBtn.classList.add('visible');
+                sourceBtn.classList.add('fade-in');
+            } else {
+                sourceBtn.classList.remove('visible');
+            }
+        }
+    </script>
+</body>
+</html>

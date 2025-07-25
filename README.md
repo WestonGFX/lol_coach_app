@@ -1,7 +1,3 @@
-Thank you for the details! Here’s a visually-rich, professional README for your lol_coach_app project, tailored to its purpose as a League of Legends account insights tool. This README uses Markdown for visuals, includes badges, setup instructions, features, and credits. You can copy and paste this into your repository.
-
----
-
 # LOL Coach App
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
@@ -86,6 +82,9 @@ Want to see it in action?
 - League of Legends API (for account and match data)
 - Chart.js or similar for data visualization
 
+---
+## Screenshot
+<img width="1256" height="2550" alt="screencapture-localhost-3000-lol-coach-app-html-2025-07-25-04_13_01" src="https://github.com/user-attachments/assets/b1bc1dad-5b56-468d-af1f-0951b6793b2d" />
 ---
 
 ## 🤝 Contributing

@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>LoL Personal Coach</title>
+    <link rel="stylesheet" href="/css/styles.css" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  </head>
+  <body>
+    <div class="container">
+      <header class="header">
+        <h1>LoL Personal Coach</h1>
+        <p>Analyse your play and learn from the best</p>
+      </header>
+
+      <section class="search-section">
+        <form id="searchForm" class="search-form">
+          <div class="form-group">
+            <label for="summonerName">Summoner Name</label>
+            <input type="text" id="summonerName" placeholder="VRÆL" required />
+          </div>
+          <div class="form-group">
+            <label for="tagLine">Tag (Riot ID)</label>
+            <input type="text" id="tagLine" placeholder="VRAEL" required />
+          </div>
+          <div class="form-group">
+            <label for="region">Region</label>
+            <select id="region" required>
+              <option value="na">North America (NA)</option>
+              <option value="euw">Europe West (EUW)</option>
+              <option value="eune">Europe Nordic & East (EUNE)</option>
+              <option value="kr">Korea (KR)</option>
+              <option value="oce">Oceania (OCE)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="dataSource">Data Source</label>
+            <select id="dataSource">
+              <option value="opgg" selected>OP.GG</option>
+              <option value="mobalytics">Mobalytics</option>
+              <option value="league_of_graphs">League of Graphs</option>
+              <option value="riot_api">Riot API</option>
+            </select>
+          </div>
+          <div class="form-group" style="align-self:end;">
+            <label>
+              <input type="checkbox" id="disableRiot" />
+              Disable Riot API (Developer Mode)
+            </label>
+            <button type="submit" class="search-button">Search</button>
+          </div>
+        </form>
+        <div class="form-group">
+          <label for="testProfiles">Test Profile</label>
+          <select id="testProfiles">
+            <option value="">Custom</option>
+            <option value="VRÆL#VRAEL|na">VRÆL#VRAEL (NA)</option>
+            <option value="Hide on bush#KR1|kr">Hide on bush#KR1 (KR)</option>
+          </select>
+        </div>
+      </section>
+
+      <section id="statsSection" class="stats-grid"></section>
+
+      <div id="tagsContainer" class="tags-container"></div>
+
+      <section id="championStatsSection">
+        <h2>Champion Statistics</h2>
+        <table id="championStatsTable">
+          <thead>
+            <tr>
+              <th>Champion</th>
+              <th>Games</th>
+              <th>Win Rate</th>
+              <th>KDA</th>
+              <th>CS/Min</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </section>
+
+      <section id="chartsSection" class="chart-container">
+        <h2 class="chart-title">Performance Overview</h2>
+        <canvas id="performanceChart" width="400" height="200"></canvas>
+      </section>
+
+      <section id="insightsSection" class="insights-section">
+        <h2 class="insights-title">Insights</h2>
+        <div id="insightsContainer"></div>
+      </section>
+
+      <div id="errorContainer"></div>
+      <div id="loadingIndicator" class="loading" style="display:none;">Loading...</div>
+    </div>
+    <script src="/js/storage.js"></script>
+    <script src="/js/app.js"></script>
+  </body>
+</html>

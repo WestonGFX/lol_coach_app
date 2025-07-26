@@ -70,8 +70,8 @@ Want to see it in action?
 
 ## 📊 Visuals
 
-![Match Insights](https://user-images.githubusercontent.com/1026133072/placeholder_match_insights.png)
-*Sample match analysis — replace with your own screenshots!*
+![Match Insights](https://github.com/user-attachments/assets/b1bc1dad-5b56-468d-af1f-0951b6793b2d)
+*Work-in-progress example of summoner profile search*
 
 ---
 
@@ -82,9 +82,6 @@ Want to see it in action?
 - League of Legends API (for account and match data)
 - Chart.js or similar for data visualization
 
----
-## Screenshot
-<img width="1256" height="2550" alt="screencapture-localhost-3000-lol-coach-app-html-2025-07-25-04_13_01" src="https://github.com/user-attachments/assets/b1bc1dad-5b56-468d-af1f-0951b6793b2d" />
 ---
 
 ## 🤝 Contributing

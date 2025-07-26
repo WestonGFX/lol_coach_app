@@ -5,7 +5,8 @@ const helmet = require('helmet');
 const path = require('path');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+// Use a fixed port unless overridden by environment
+const PORT = process.env.PORT || 6969;
 
 // Middleware
 app.use(helmet({
@@ -414,10 +415,32 @@ function saveInsights(puuid, insights) {
 
 app.post('/api/summoner', async (req, res) => {
     try {
-        const { summonerName, tagLine, region, dataSource = 'all', useRiotApi = false } = req.body;
+        let { summonerName, tagLine, region, dataSource = 'all', useRiotApi = false } = req.body;
         if (!summonerName || !tagLine || !region) {
             return res.status(400).json({ error: 'Missing required fields', message: 'Summoner name, tag line, and region are required' });
         }
+
+        // Region maps for each data source
+        const regionMaps = {
+            riot_api: { na: 'na1', euw: 'euw1', eune: 'eun1', kr: 'kr', oce: 'oc1' },
+            opgg:     { na: 'na1', euw: 'euw1', eune: 'eun1', kr: 'kr', oce: 'oce' },
+            mobalytics: { na: 'na', euw: 'euw', eune: 'eune', kr: 'kr', oce: 'oce' },
+            league_of_graphs: { na: 'na', euw: 'euw', eune: 'eune', kr: 'kr', oce: 'oce' }
+        };
+
+        // Example usage:
+        const riotRegion = regionMaps.riot_api[region] || region;
+        const opggRegion = regionMaps.opgg[region] || region;
+        const mobalyticsRegion = regionMaps.mobalytics[region] || region;
+        const leagueOfGraphsRegion = regionMaps.league_of_graphs[region] || region;
+
+        // Then pass the correct region to each data source:
+        // e.g.
+        // await fetchFromRiotApi(summonerName, tagLine, riotRegion)
+        // await scrapeOPGG(summonerName, tagLine, opggRegion)
+        // await scrapeMobalytics(summonerName, tagLine, mobalyticsRegion)
+        // await scrapeLeagueOfGraphs(summonerName, tagLine, leagueOfGraphsRegion)
+
         console.log(`Fetching data for ${summonerName}#${tagLine} on ${region}`);
         console.log(`Requested data source: ${dataSource}, useRiotApi: ${useRiotApi}`);
         let scrapedData = null;
@@ -539,6 +562,17 @@ app.post('/api/summoner', async (req, res) => {
         } catch (saveErr) {
             console.log('⚠️  Failed to save scraped data to database:', saveErr.message);
         }
+
+        // Debug logging before sending response
+        console.log('\n=== Debug: Data being sent to frontend ===');
+        console.log('Summoner:', normalizedResponse.summoner);
+        console.log('Ranked Data:', normalizedResponse.ranked);
+        console.log('Match Count:', normalizedResponse.matches.length);
+        console.log('Statistics:', normalizedResponse.statistics);
+        console.log('Data Source:', normalizedResponse.dataSource);
+        console.log('Failed Sources:', normalizedResponse.failedSources);
+        console.log('=====================================\n');
+
         return res.json(normalizedResponse);
     } catch (error) {
         console.error('Error in /api/summoner:', error);
@@ -606,4 +640,35 @@ process.on('SIGINT', () => {
         }
     });
     process.exit(0);
+});
+
+// Add this new test endpoint
+app.get('/api/test/:source', async (req, res) => {
+    const { source } = req.params;
+    const testSummoner = {
+        name: 'VRÆL',
+        tagLine: 'VRAEL',
+        region: 'na'
+    };
+
+    try {
+        let data;
+        switch(source) {
+            case 'opgg':
+                data = await scrapeOPGG(testSummoner.name, testSummoner.tagLine, testSummoner.region);
+                break;
+            case 'mobalytics':
+                data = await scrapeMobalytics(testSummoner.name, testSummoner.tagLine, testSummoner.region);
+                break;
+            case 'leagueofgraphs':
+                data = await scrapeLeagueOfGraphs(testSummoner.name, testSummoner.tagLine, testSummoner.region);
+                break;
+            default:
+                return res.status(400).json({ error: 'Invalid source' });
+        }
+        res.json(data);
+    } catch (error) {
+        console.error(`Test ${source} error:`, error);
+        res.status(500).json({ error: error.message });
+    }
 });

@@ -21,83 +21,146 @@ module.exports = (logError, DATA_SOURCES) => {
         timeout: 25000,
         validateStatus: status => status < 500
       });
+      
       if (response.status === 404) {
         throw new Error(`Summoner ${summonerName}#${tagLine} not found on League of Graphs`);
       }
+      
       const $ = cheerio.load(response.data);
-      const levelElement = $('.summonerLevel, [class*="level"]').first();
-      const level = parseInt(levelElement.text().replace(/\D/g, '')) || 0;
-      const rankElement = $('.leagueTier, .rank, [class*="tier"]').first();
-      const rankText = rankElement.text().trim() || 'Unranked';
-      const lpElement = $('.leaguePoints, [class*="lp"], [class*="points"]').first();
-      const lp = parseInt(lpElement.text().replace(/\D/g, '')) || 0;
-      const winsElement = $('.wins, [class*="win"]:not([class*="rate"])').first();
-      const lossesElement = $('.losses, [class*="loss"]').first();
-      const wins = parseInt(winsElement.text().replace(/\D/g, '')) || 0;
-      const losses = parseInt(lossesElement.text().replace(/\D/g, '')) || 0;
+      
+      // Get summoner level - found in text containing "Level"
+      const levelText = $('div:contains("Level")').first().text();
+      const levelMatch = levelText.match(/Level\s+(\d+)/);
+      const level = levelMatch ? parseInt(levelMatch[1]) : 0;
+
+      // Get rank info from the ranked section
+      const rankElement = $('div:contains("LP")').first();
+      const rankText = rankElement.text().trim();
+      const rankMatch = rankText.match(/(Iron|Bronze|Silver|Gold|Platinum|Diamond|Master|Grandmaster|Challenger)\s+(I|II|III|IV|V)\s+(\d+)\s+LP/i);
+      const tier = rankMatch ? rankMatch[1] : 'Unranked';
+      const rank = rankMatch ? rankMatch[2] : '';
+      const lp = rankMatch ? parseInt(rankMatch[3]) : 0;
+
+      // Get wins/losses - they appear near each other in the ranked section
+      const statsText = $('div:contains("Wins"):contains("Losses")').first().text();
+      const winsMatch = statsText.match(/Wins:\s*(\d+)/);
+      const lossesMatch = statsText.match(/Losses:\s*(\d+)/);
+      const wins = winsMatch ? parseInt(winsMatch[1]) : 0;
+      const losses = lossesMatch ? parseInt(lossesMatch[1]) : 0;
       const totalGames = wins + losses;
-      const winRate = totalGames > 0 ? (wins / totalGames * 100) : 0;
-      const kdaElement = $('.kda, [class*="kda"]').first();
-      const kdaText = kdaElement.text().trim() || '0/0/0';
-      const recentMatches = [];
-      $('.match, [class*="match"], .game').each((i, element) => {
-        if (i >= 8) return false;
-        const match = $(element);
-        const championName = match.find('.champion, [class*="champion"]').text().trim();
-        const matchResult = match.find('.result, [class*="result"]').text().trim();
-        const matchKda = match.find('.kda, [class*="kda"]').text().trim();
-        if (championName) {
-          let kdaParts = matchKda.split(/\s*[\/\-]\s*/);
-          if (!kdaParts || kdaParts.length < 3) {
-            const kdaMatch = matchKda.match(/(\d+)\D+(\d+)\D+(\d+)/);
-            kdaParts = kdaMatch ? [kdaMatch[1], kdaMatch[2], kdaMatch[3]] : [0, 0, 0];
+      // Store win rate as a decimal (56.2% = 0.562)
+      const winRate = totalGames > 0 ? parseFloat((wins / totalGames).toFixed(3)) : 0;
+
+      // Get KDA from the overall stats section
+      const kdaText = $('div:contains("/"):contains("Average KDA")').first().text();
+      const kdaMatch = kdaText.match(/(\d+\.?\d*)\s*\/\s*(\d+\.?\d*)\s*\/\s*(\d+\.?\d*)/);
+      let kills = 0, deaths = 0, assists = 0;
+      
+      if (kdaMatch) {
+        kills = parseFloat(kdaMatch[1]);
+        deaths = parseFloat(kdaMatch[2]);
+        assists = parseFloat(kdaMatch[3]);
+      }
+      
+      // Calculate KDA according to League's formula: (Kills + Assists) / Deaths
+      const kdaAvg = deaths > 0 ? ((kills + assists) / deaths).toFixed(2) : (kills + assists).toFixed(2);
+
+      // Get CS per minute from recent matches
+      let totalCSPerMin = 0;
+      let validCSGames = 0;
+      
+      // Look for CS and game duration in match history
+      $('.game-box:not(.arena)').each((_, el) => {
+        const $match = $(el);
+        const csText = $match.find('[class*="cs"], [class*="farm"]').text();
+        const durationText = $match.find('[class*="duration"]').text();
+        
+        const csMatch = csText.match(/(\d+)\s*CS/);
+        const durationMatch = durationText.match(/(\d+):(\d+)/);
+        
+        if (csMatch && durationMatch) {
+          const cs = parseInt(csMatch[1]);
+          const minutes = parseInt(durationMatch[1]);
+          const seconds = parseInt(durationMatch[2]);
+          const durationInMinutes = minutes + (seconds / 60);
+          
+          if (durationInMinutes > 0) {
+            const csPerMin = cs / durationInMinutes;
+            // Only count reasonable CS/min values (between 0 and 12)
+            if (csPerMin >= 0 && csPerMin <= 12) {
+              totalCSPerMin += csPerMin;
+              validCSGames++;
+            }
           }
-          const kills = parseInt(kdaParts[0]) || 0;
-          const deaths = parseInt(kdaParts[1]) || 0;
-          const assists = parseInt(kdaParts[2]) || 0;
+        }
+      });
+      
+      const avgCS = validCSGames > 0 ? (totalCSPerMin / validCSGames).toFixed(1) : '0';
+
+      // Get match history
+      const recentMatches = [];
+      $('[class*="game-box"]:not([class*="arena"])').each((_, matchEl) => {
+        const $match = $(matchEl);
+        const champName = $match.find('[class*="champion"]').attr('title') || '';
+        const kdaText = $match.find('[class*="kda"]').text().trim();
+        const isWin = $match.find('[class*="victory"], [class*="win"]').length > 0;
+        const csText = $match.find('[class*="cs"]').text().trim();
+        const dateText = $match.find('[class*="time-ago"]').text().trim();
+        
+        const kdaMatch = kdaText.match(/(\d+)\s*\/\s*(\d+)\s*\/\s*(\d+)/);
+        if (kdaMatch) {
           recentMatches.push({
-            champion_name: championName,
-            win: matchResult.toLowerCase().includes('victory') ||
-                 matchResult.toLowerCase().includes('win') ||
-                 match.hasClass('victory') || match.hasClass('win'),
-            kills,
-            deaths,
-            assists,
-            cs_per_minute: 0
+            champion: champName,
+            kda: {
+              kills: parseInt(kdaMatch[1]),
+              deaths: parseInt(kdaMatch[2]),
+              assists: parseInt(kdaMatch[3])
+            },
+            result: isWin ? 'Victory' : 'Defeat',
+            cs: parseInt(csText) || 0,
+            date: dateText
           });
         }
       });
-      let avgKDAVal = 0;
-      let avgCSVal = 0;
-      if (recentMatches.length > 0) {
-        const totalKills = recentMatches.reduce((sum, m) => sum + (m.kills || 0), 0);
-        const totalDeaths = recentMatches.reduce((sum, m) => sum + (m.deaths || 0), 0);
-        const totalAssists = recentMatches.reduce((sum, m) => sum + (m.assists || 0), 0);
-        avgKDAVal = totalDeaths > 0 ? (totalKills + totalAssists) / totalDeaths / recentMatches.length : 0;
-        avgCSVal = recentMatches.reduce((sum, m) => sum + (m.cs_per_minute || 0), 0) / recentMatches.length;
-      }
-      const scrapedData = {
-        source: DATA_SOURCES.LEAGUE_OF_GRAPHS,
-        summoner: { name: summonerName, tagLine, level, region },
-        ranked: rankText !== 'Unranked' ? [{
+
+      // Prepare the return object
+      const summonerData = {
+        summoner: {
+          name: summonerName,
+          tagLine,
+          region,
+          level
+        },
+        ranked: [{
           queueType: 'RANKED_SOLO_5x5',
-          tier: rankText.split(' ')[0] || 'UNRANKED',
-          rank: rankText.split(' ')[1] || '',
+          tier,
+          rank,
           leaguePoints: lp,
           wins,
           losses
-        }] : [],
+        }],
         matches: recentMatches,
-        statistics: { totalGames, winRate: winRate / 100, avgKDA: avgKDAVal, avgCS: avgCSVal },
-        leagueOfGraphsSpecific: { kdaText }
+        statistics: {
+          totalGames,
+          winRate, // Already stored as proper decimal (0.562 for 56.2%)
+          avgKDA: parseFloat(kdaAvg), // Properly calculated (K+A)/D
+          avgCS: parseFloat(avgCS), // Now properly calculated per minute, range 0-12
+          kda: { // Adding individual KDA components
+            kills,
+            deaths,
+            assists
+          }
+        },
+        sourceUrl: url
       };
+
       console.log(`[League of Graphs] Successfully scraped data for ${summonerName}#${tagLine}`);
-      return scrapedData;
+      return summonerData;
+
     } catch (error) {
       logError(DATA_SOURCES.LEAGUE_OF_GRAPHS, 'SCRAPE_SUMMONER', error, { summonerName, tagLine, region, retryCount });
       if (retryCount < maxRetries && (error.code === 'ECONNRESET' || error.code === 'ETIMEDOUT')) {
         console.log(`[League of Graphs] Retrying... (${retryCount + 1}/${maxRetries})`);
-        await new Promise(resolve => setTimeout(resolve, 4000 * (retryCount + 1)));
         return scrapeLeagueOfGraphs(summonerName, tagLine, region, retryCount + 1);
       }
       throw error;

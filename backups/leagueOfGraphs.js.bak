@@ -1,0 +1,163 @@
+const axios = require('axios');
+const cheerio = require('cheerio');
+const { encodeSpecialCharacters } = require('./utils');
+
+module.exports = (logError, DATA_SOURCES) => {
+  async function scrapeLeagueOfGraphs(summonerName, tagLine, region, retryCount = 0) {
+    const maxRetries = 3;
+    try {
+      const fullName = `${summonerName}-${tagLine}`;
+      const encodedName = encodeSpecialCharacters(fullName);
+      const url = `https://www.leagueofgraphs.com/summoner/${region}/${encodedName}`;
+      console.log(`[League of Graphs] Scraping: ${url}`);
+      const response = await axios.get(url, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0',
+          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+          'Accept-Language': 'en-US,en;q=0.5',
+          'Accept-Encoding': 'gzip, deflate, br',
+          'Connection': 'keep-alive'
+        },
+        timeout: 25000,
+        validateStatus: status => status < 500
+      });
+      if (response.status === 404) {
+        throw new Error(`Summoner ${summonerName}#${tagLine} not found on League of Graphs`);
+      }
+      const $ = cheerio.load(response.data);
+      // Get summoner level - found in text containing "Level"
+      const levelText = $('div:contains("Level")').first().text();
+      const levelMatch = levelText.match(/Level\s+(\d+)/);
+      const level = levelMatch ? parseInt(levelMatch[1]) : 0;
+
+      // Get rank info from the ranked section
+      const rankElement = $('div:contains("LP")').first();
+      const rankText = rankElement.text().trim();
+      const rankMatch = rankText.match(/(Iron|Bronze|Silver|Gold|Platinum|Diamond|Master|Grandmaster|Challenger)\s+(I|II|III|IV|V)\s+(\d+)\s+LP/i);
+      const tier = rankMatch ? rankMatch[1] : 'Unranked';
+      const rank = rankMatch ? rankMatch[2] : '';
+      const lp = rankMatch ? parseInt(rankMatch[3]) : 0;
+
+      // Get wins/losses - they appear near each other in the ranked section
+      const statsText = $('div:contains("Wins"):contains("Losses")').first().text();
+      const winsMatch = statsText.match(/Wins:\s*(\d+)/);
+      const lossesMatch = statsText.match(/Losses:\s*(\d+)/);
+      const wins = winsMatch ? parseInt(winsMatch[1]) : 0;
+      const losses = lossesMatch ? parseInt(lossesMatch[1]) : 0;
+      const totalGames = wins + losses;
+      const winRate = totalGames > 0 ? ((wins / totalGames) * 100).toFixed(1) : 0;
+
+      // Get KDA from recent matches or overall stats
+      const kdaText = $('div:contains("/"):contains("Average KDA")').first().text();
+      const kdaMatch = kdaText.match(/(\d+\.?\d*)\s*\/\s*(\d+\.?\d*)\s*\/\s*(\d+\.?\d*)/);
+      const kdaAvg = kdaMatch ? 
+        ((parseFloat(kdaMatch[1]) + parseFloat(kdaMatch[3])) / parseFloat(kdaMatch[2])).toFixed(2) : '0';
+
+      // Get average CS from recent matches
+      const csPattern = /(\d+)\s*CS/g;
+      let totalCS = 0;
+      let csGames = 0;
+      $('.match-history div:contains("CS")').each((_, el) => {
+        const csMatch = $(el).text().match(/(\d+)\s*CS/);
+        if (csMatch) {
+          totalCS += parseInt(csMatch[1]);
+          csGames++;
+        }
+      });
+      const avgCS = csGames > 0 ? (totalCS / csGames).toFixed(1) : 0;
+      const recentMatches = [];
+      $('.match-history .match, .recentgames .game, [class*="match-history"] [class*="game-item"]').each((i, element) => {
+        if (i >= 10) return false; // Limit to 10 most recent games
+        const match = $(element);
+        
+        // Get champion name
+        const championName = match.find('[class*="champion-name"], .champion').first().text().trim();
+        
+        // Get KDA
+        const kdaText = match.find('[class*="kda"], .kda-score').first().text().trim();
+        let kdaParts = kdaText.split(/\s*[\/\-]\s*/);
+        if (!kdaParts || kdaParts.length < 3) {
+            const kdaMatch = kdaText.match(/(\d+)\D+(\d+)\D+(\d+)/);
+            kdaParts = kdaMatch ? [kdaMatch[1], kdaMatch[2], kdaMatch[3]] : [0, 0, 0];
+        }
+        
+        // Get CS and game duration
+        const csElement = match.find('[class*="cs"], [class*="minions"], .farm-score').first();
+        const csText = csElement.text().trim();
+        const csMatch = csText.match(/(\d+)/);
+        const cs = csMatch ? parseInt(csMatch[1]) : 0;
+        
+        // Get game duration in minutes
+        const durationText = match.find('[class*="game-duration"], [class*="duration"]').first().text().trim();
+        const durationMatch = durationText.match(/(\d+):(\d+)/);
+        const durationMinutes = durationMatch ? parseInt(durationMatch[1]) + (parseInt(durationMatch[2]) / 60) : 20; // default to 20 if not found
+        
+        // Calculate CS per minute
+        const csPerMin = durationMinutes > 0 ? (cs / durationMinutes) : 0;
+
+        const kills = parseInt(kdaParts[0]) || 0;
+        const deaths = parseInt(kdaParts[1]) || 0;
+        const assists = parseInt(kdaParts[2]) || 0;
+
+        recentMatches.push({
+          champion_name: championName,
+          win: match.hasClass('victory') || 
+               match.hasClass('win') || 
+               match.find('.victory, .win, [class*="victory"], [class*="win"]').length > 0,
+          kills,
+          deaths,
+          assists,
+          cs_per_minute: parseFloat(csPerMin.toFixed(1))
+        });
+      });
+      // Calculate performance statistics
+      let avgKDAVal = 0;
+      let avgCSVal = 0;
+      let matchWinRate = 0;
+
+      if (recentMatches.length > 0) {
+        // Calculate average KDA
+        const kdaValues = recentMatches.map(m => 
+          (m.kills + m.assists) / Math.max(m.deaths, 1)
+        );
+        avgKDAVal = kdaValues.reduce((sum, kda) => sum + kda, 0) / recentMatches.length;
+
+        // Calculate average CS per minute
+        const validCSValues = recentMatches.filter(m => m.cs_per_minute > 0);
+        avgCSVal = validCSValues.length > 0
+          ? validCSValues.reduce((sum, m) => sum + m.cs_per_minute, 0) / validCSValues.length
+          : 0;
+
+        // Calculate recent match win rate
+        const matchWins = recentMatches.filter(m => m.win).length;
+        matchWinRate = matchWins / recentMatches.length;
+      }
+      const scrapedData = {
+        source: DATA_SOURCES.LEAGUE_OF_GRAPHS,
+        summoner: { name: summonerName, tagLine, level, region },
+        ranked: rankText !== 'Unranked' ? [{
+          queueType: 'RANKED_SOLO_5x5',
+          tier: rankText.split(' ')[0] || 'UNRANKED',
+          rank: rankText.split(' ')[1] || '',
+          leaguePoints: lp,
+          wins,
+          losses
+        }] : [],
+        matches: recentMatches,
+        statistics: { totalGames, winRate: winRate / 100, avgKDA: avgKDAVal, avgCS: avgCSVal },
+        leagueOfGraphsSpecific: { kdaText }
+      };
+      console.log(`[League of Graphs] Successfully scraped data for ${summonerName}#${tagLine}`);
+      return scrapedData;
+    } catch (error) {
+      logError(DATA_SOURCES.LEAGUE_OF_GRAPHS, 'SCRAPE_SUMMONER', error, { summonerName, tagLine, region, retryCount });
+      if (retryCount < maxRetries && (error.code === 'ECONNRESET' || error.code === 'ETIMEDOUT')) {
+        console.log(`[League of Graphs] Retrying... (${retryCount + 1}/${maxRetries})`);
+        await new Promise(resolve => setTimeout(resolve, 4000 * (retryCount + 1)));
+        return scrapeLeagueOfGraphs(summonerName, tagLine, region, retryCount + 1);
+      }
+      throw error;
+    }
+  }
+  return { scrapeLeagueOfGraphs };
+};
